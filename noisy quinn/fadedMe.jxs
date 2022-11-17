@@ -1,0 +1,128 @@
+<jittershader name="mfShader">
+	<description> Shader for my midi fighter demo </description>
+
+	<param name = "modelViewProjectionMat" type="mat4" state="MODELVIEW_PROJECTION_MATRIX"/>
+	
+	<param name = "texture0_Mat" type="mat4" state="TEXTURE0_MATRIX"/>
+	<param name = "texture1_Mat" type="mat4" state="TEXTURE1_MATRIX"/>	
+	<param name = "texture2_Mat" type="mat4" state="TEXTURE2_MATRIX"/>
+
+
+	<param name = "textureCoord" type="vec2" state="TEXCOORD"/>
+	<param name = "position" type="vec3" state="POSITION" />
+
+	<param name="notes" type="vec3" state="VERTEX_ATTR0" />  
+
+	<param name = "colorTex" type ="int" default="0"/>
+	<param name = "keyTex" type ="int" default="1"/>
+	<param name = "bgTex" type ="int" default="2"/>
+
+
+
+	<param name = "fader" type="float" default="3.5"/>
+
+	<param name = "size" type="vec2" default="0 0"/>
+
+
+	<language name ="glsl" version ="1.5">
+
+	<bind param = "texture0_Mat" program="vp"/>
+	<bind param = "texture1_Mat" program="vp"/>
+
+	<bind param = "modelViewProjectionMat" program="vp"/>
+	<bind param = "position" program="vp"/>
+	<bind param = "textureCoord" program="vp"/>
+	<bind param= "pressed" program="vp"/>  
+	<bind param = "flash" program="fp"/>
+	<bind param = "flashY" program="fp"/>
+	<bind param = "size" program="fp"/>
+
+
+	<bind param = "colorTex" program="fp"/>
+	<bind param = "keyTex" program="fp"/>
+	<bind param = "bgTex" program="fp"/>
+	<bind param = "fader" program="fp"/>
+
+
+	<bind param = "notes" program="fp"/>
+
+
+	
+
+<program name="vp" type ="vertex">
+<![CDATA[
+// vertex shader
+#version 330 core
+
+uniform mat4 texture0_Mat;
+uniform mat4 texture1_Mat;
+uniform mat4 texture2_Mat;
+
+
+uniform mat4 modelViewProjectionMat;
+
+in vec2 textureCoord;
+in vec3 position;
+in vec3 notes;
+
+out vec3 fragPos;
+out vec2 texcoord0;
+out vec2 texcoord1;
+out vec2 texcoord2;
+
+
+
+void main()
+{
+	texcoord0 = (texture0_Mat * vec4(textureCoord, 0.0, 1.0)).xy;
+	texcoord1 = (texture1_Mat * vec4(textureCoord, 0.0, 1.0)).xy;
+	texcoord2 = (texture2_Mat * vec4(textureCoord, 0.0, 1.0)).xy;
+
+
+	vec3 newPos = vec3(position.x, position.y, position.z);
+	fragPos = newPos;
+	gl_Position = modelViewProjectionMat * vec4(newPos, 1.0);
+}
+]]>
+	</program> 
+
+	<program name ="fp" type ="fragment">
+<![CDATA[
+//fragment shader
+#version 330 core
+
+uniform sampler2DRect colorTex;
+uniform sampler2DRect keyTex;
+uniform sampler2DRect bgTex;
+
+uniform vec2 size; 
+
+uniform float fader;
+
+
+in vec3 fragPos;
+in vec2 texcoord0;
+in vec2 texcoord1;
+in vec2 texcoord2;
+
+out vec4 outColor;
+void main()
+{
+	vec2 st = gl_FragCoord.xy / size;
+
+
+	vec4 texColor = texture2DRect(colorTex, texcoord0);
+	vec4 noteMask = texture2DRect(keyTex, texcoord1);
+
+	float pct = distance(st, vec2(0.25, 0.24));      
+	pct = pct * fader;
+	// pct = pct * noteMask.x;	
+	float gray = 0.21 * texColor.x + 0.71 * texColor.y + 0.07 * texColor.z;
+	float factor = 1. - noteMask.x;
+	outColor = vec4(texColor.xyz,  (1 - noteMask.x) * (1 - pct));
+	// outColor = outColor * vec4(pct);
+}
+]]>
+	</program>
+</language>
+</jittershader>
